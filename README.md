@@ -1,4 +1,4 @@
-# OT.py
+# ot.py
 RSA based t-out-of-n oblivious transfer (OT) in Python. This was made for fun: I make no claims of real cryptographic security.
 
 OT is used when you have two parties, Alice and Bob. Alice has `n` secrets, and wants to share `t` of them with Bob without revealing any of the other ones. Bob wants to pick a certain subset of Alices secrets of size `t`, but does not want to reveal to Alice which `t` secrets he picks. OT can be used to solve this problem, allowing Alice to "obliviously" transfer `t` secrets to Bob.

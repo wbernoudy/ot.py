@@ -9,7 +9,6 @@ from random import SystemRandom
 from bigfloat import *
 from builtins import pow as modpow
 
-key_length = 44 # length of the keys (the messages Alice has) in bytes
 RSA_bits = 512
 prec = 600 # this should be larger than # of bits for RSA keys
 setcontext(precision(prec)) 
@@ -59,23 +58,23 @@ def lagrange(x, y, G):
 
 def bytes_to_int(m):
     m = list(m)
+    m = list(map(lambda x: x+1, m))
     m_len = len(m)
     for i in range(m_len):
-        m[i] *= 256**(m_len - 1 - i)
+        m[i] *= 257**(m_len - 1 - i)
 
     return sum(m)
 
 def int_to_bytes(i):
     int_array = []
     for x in range(RSA_bits//8 - 1, -1, -1):
-        b = floordiv(i, pow(256, x))
+        b = floordiv(i, pow(257, x))
         int_array.append(int(b))
-        i -= mul(b, pow(256, x))
+        i -= mul(b, pow(257, x))
 
-    return bytes(bytearray(int_array))
+    int_array = list(map(lambda x: x-1, filter(lambda x: x, int_array)))
 
-def strip_padding(b):
-    return b[(RSA_bits//8 - key_length):]
+    return bytes(int_array)
 
 def compute_poly(f, x):
     y = 0
@@ -152,7 +151,7 @@ class Bob:
         for j in range(self.num_des_messages):
             d = div(G[self.des_messages[j]], self.R[j]) % self.pubkey.n
             dec_bytes = int_to_bytes(d)
-            decrypted.append(strip_padding(dec_bytes))
+            decrypted.append(dec_bytes)
 
             if hasher(decrypted[j]) != self.hashes[self.des_messages[j]]:
                 print("Hashes don't match. Either something messed up or Alice is up to something.")

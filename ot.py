@@ -118,8 +118,7 @@ class Alice:
 
 class Bob:
 
-    def __init__(self, num_messages, num_des_messages, des_messages):
-        self.num_messages = num_messages
+    def __init__(self, num_des_messages, des_messages):
         self.num_des_messages = num_des_messages
         self.des_messages = des_messages
 

@@ -7,14 +7,14 @@ My implementation is based on this paper: [Non-Interactive t-out-of-n Oblivious 
 
 ## Usage
 
-`ot.py` provides two classes, `Alice` and `Bob`. For this example, Let's say Alice has two secrets, `Secret message 1` and `Secret message 2`.
+`ot.py` provides two classes, `Alice` and `Bob`. For this example, Let's say Alice has three secrets, `Secret message 1`, `Secret message 2`, and `Secret message 3`, and Bob will grab two of them (2 out of 3 OT).
 
 On Alice's terminal:
 
 ```python
 > from ot import *
-> secrets = [b'Secret message 1', b'Secret message 2']
-> alice = Alice(secrets)
+> secrets = [b'Secret message 1', b'Secret message 2', b'Secret message 3']
+> alice = Alice(secrets, 2)
 ```
 
 We can now run `setup` on the `Alice` object, which will begin the OT. By default, it writes json to a file called `alice_setup.json`.
@@ -23,10 +23,10 @@ We can now run `setup` on the `Alice` object, which will begin the OT. By defaul
 Pubkey and hashes published.
 ```
 
-Now switch to Bob's terminal. To create a `Bob` object, we pass the number of messages Alice has, the number of desired messages, and a list of the IDs of the messages we want. Let's say we want the second secret Alice has:
+Now switch to Bob's terminal. To create a `Bob` object, we pass the number of messages Alice has, the number of desired messages, and a list of the IDs of the messages we want. Let's say we want the first and the third secrets Alice has:
 ```python
 > from ot import *
-> bob = Bob(2, 1, [1])
+> bob = Bob(3, 2, [0, 2])
 > bob.setup()
 Polynomial published.
 ```
@@ -44,12 +44,12 @@ This by defualt reads from `bob_setup.json` and writes to `alice_dec.json`.
 Finally, back to Bob's terminal:
 ```python
 > bob.receive()
-[b'Secret message 2']
+[b'Secret message 1', b'Secret message 3']
 ```
 
 This by default reads from `alice_dec.json`.
 
-We can see we have the secret we asked for. If something goes wrong in transmission or Alice tries to mess with things (i.e. the hashes don't match), we get:
+We can see we have the secret we asked for. If something goes wrong in transmission or Alice tries to mess with things (i.e. the hashes don't match), we will get something like:
 ```python
 > bob.receive()
 Hashes don't match. Either something messed up or Alice is up to something.

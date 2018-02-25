@@ -14,7 +14,7 @@ On Alice's terminal:
 ```python
 > from ot import *
 > secrets = [b'Secret message 1', b'Secret message 2', b'Secret message 3']
-> alice = Alice(secrets, 2)
+> alice = Alice(secrets, 2, len(secrets[0]))
 ```
 
 We can now run `setup` on the `Alice` object, which will begin the OT. By default, it writes json to a file called `alice_setup.json`.
@@ -26,7 +26,7 @@ Pubkey and hashes published.
 Now switch to Bob's terminal. To create a `Bob` object, we pass the number of messages Alice has, the number of desired messages, and a list of the IDs of the messages we want. Let's say we want the first and the third secrets Alice has:
 ```python
 > from ot import *
-> bob = Bob(3, 2, [0, 2])
+> bob = Bob([0, 2])
 > bob.setup()
 Polynomial published.
 ```

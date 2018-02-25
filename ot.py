@@ -106,8 +106,8 @@ class Alice:
         print("G has been published.")
 
 class Bob:
-    def __init__(self, num_des_messages, des_messages):
-        self.num_des_messages = num_des_messages
+    def __init__(self, des_messages):
+        self.num_des_messages = len(des_messages)
         self.des_messages = des_messages
 
     def setup(self, file_name="bob_setup.json", alice_file_name="alice_setup.json"):
@@ -152,14 +152,16 @@ if __name__ == "__main__":
     import random
     secret_length = 63 # length of the keys (the messages Alice has) in bytes
     alphabet = "abcdefghijklmnopqrstuvwxyz"
-    secrets = [bytes("".join(random.choice(alphabet) for _ in range(secret_length)), "ASCII") for __ in range(8)]
-    t = 3
+    #secrets = [bytes("".join(random.choice(alphabet) for _ in range(secret_length)), "ASCII") for __ in range(8)]
+    secrets = [b'Secret message 1', b'Secret message 2', b'Secret message 3']
+    secret_length = len(secrets[0])
+    t = 2
     alice = Alice(secrets, t, secret_length)
-    bob = Bob(t, list(range(t)))
+    bob = Bob([0, 2])
 
     alice.setup()
     bob.setup()
     alice.transmit()
     M_prime = bob.receive()
-    assert M_prime == secrets[:t], M_prime
+    print(M_prime)
 

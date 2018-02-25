@@ -6,7 +6,6 @@ from random import SystemRandom
 from next_prime import next_prime
 from mulinv import mulinv
 
-secret_length = 44 # length of the keys (the messages Alice has) in bytes
 RSA_bits = 512
 
 cryptorand = SystemRandom()
@@ -51,24 +50,12 @@ def lagrange(x, y, G):
     return f
 
 def bytes_to_int(m):
-    m = list(m)
-    m_len = len(m)
-    for i in range(m_len):
-        m[i] *= 256**(m_len - 1 - i)
-
-    return sum(m)
+    return int.from_bytes(m, byteorder="big")
 
 def int_to_bytes(i):
-    int_array = []
-    for x in range(RSA_bits//8 - 1, -1, -1):
-        # next line is a little iffy
-        b = i // pow(256, x)
-        int_array.append(int(b))
-        i -= b * pow(256, x)
+    return i.to_bytes(RSA_bits//8, byteorder="big")
 
-    return bytes(int_array)
-
-def strip_padding(b):
+def strip_padding(b, secret_length):
     return b[(RSA_bits//8 - secret_length):]
 
 def compute_poly(f, x, m):
@@ -78,11 +65,13 @@ def compute_poly(f, x, m):
     return y % m
 
 class Alice:
-    def __init__(self, M, t):
+    def __init__(self, M, t, secret_length):
+        assert secret_length < RSA_bits//8, "Secret length too long for RSA key size"
         for m in M:
             assert len(m) == secret_length, "Messages must have same length as secret_length"
         self.M = M
         self.t = t
+        self.secret_length = secret_length
 
         (pubkey, privkey) = rsa.newkeys(RSA_bits)
         self.pubkey = pubkey
@@ -95,8 +84,11 @@ class Alice:
             self.hashes.append(hasher(m))
 
     def setup(self, file_name = "alice_setup.json"):
-        j = {"pubkey": {"e": self.pubkey.e, "n": self.pubkey.n},
-                "hashes": self.hashes}
+        j = {
+                "pubkey": {"e": self.pubkey.e, "n": self.pubkey.n},
+                "hashes": self.hashes,
+                "secret_length": self.secret_length,
+                }
 
         write_json(file_name, j)
         print("Pubkey and hashes published.")
@@ -108,21 +100,21 @@ class Alice:
         G = []
         for i in range(len(self.M)):
             F = pow(compute_poly(f, i, self.G), self.privkey.d, self.pubkey.n)
-            G.append(F * bytes_to_int(self.M[i]))
+            G.append((F * bytes_to_int(self.M[i])) % self.pubkey.n)
 
         write_json(file_name, G)
         print("G has been published.")
 
 class Bob:
-
     def __init__(self, num_des_messages, des_messages):
         self.num_des_messages = num_des_messages
         self.des_messages = des_messages
 
-    def setup(self, file_name = "bob_setup.json", alice_file_name = "alice_setup.json"):
+    def setup(self, file_name="bob_setup.json", alice_file_name="alice_setup.json"):
         alice = read_json(alice_file_name)
         self.pubkey = rsa.PublicKey(alice["pubkey"]["n"], alice["pubkey"]["e"])
         self.hashes = alice["hashes"]
+        self.secret_length = alice["secret_length"]
 
         self.R = []
         T = []
@@ -147,7 +139,7 @@ class Bob:
         for j in range(self.num_des_messages):
             d = moddiv(G[self.des_messages[j]], self.R[j], self.pubkey.n)
             dec_bytes = int_to_bytes(d)
-            decrypted.append(strip_padding(dec_bytes))
+            decrypted.append(strip_padding(dec_bytes, self.secret_length))
 
             if hasher(decrypted[j]) != self.hashes[self.des_messages[j]]:
                 print("Hashes don't match. Either something messed up or Alice is up to something.")
@@ -155,11 +147,14 @@ class Bob:
         self.decrypted = decrypted
         return(decrypted)
 
-def test():
+
+if __name__ == "__main__":
+    import random
+    secret_length = 63 # length of the keys (the messages Alice has) in bytes
     alphabet = "abcdefghijklmnopqrstuvwxyz"
-    secrets = [bytes(x * secret_length, "ASCII") for x in alphabet[:8]]
+    secrets = [bytes("".join(random.choice(alphabet) for _ in range(secret_length)), "ASCII") for __ in range(8)]
     t = 3
-    alice = Alice(secrets, t)
+    alice = Alice(secrets, t, secret_length)
     bob = Bob(t, list(range(t)))
 
     alice.setup()
@@ -168,4 +163,3 @@ def test():
     M_prime = bob.receive()
     assert M_prime == secrets[:t], M_prime
 
-test()
